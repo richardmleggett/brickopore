@@ -7,10 +7,61 @@
 #include <netdb.h> 
 #include <unistd.h>
 
+#define Sleep( msec ) usleep(( msec ) * 1000 )
+#define COLOR_COUNT  (( int )( sizeof( color ) / sizeof( color[ 0 ])))
+
+const char const *color[] = { "?", "BLACK", "BLUE", "GREEN", "YELLOW", "RED", "WHITE", "BROWN" };
+
 void error(char *msg)
 {
     perror(msg);
     exit(0);
+}
+
+void init_brick(void) {
+    char s[ 256 ];
+    int val;
+    uint32_t n, i, j;
+    uint8_t sn_touch, sn_color, sn_ir;
+    
+    printf("Waiting for the EV3 brick...\n");
+    if (ev3_init() < 1) {
+        return(1);
+    }
+    
+    printf("Got EV3 brick...\n");
+
+    ev3_sensor_init();
+
+    printf("Found sensors:\n" );
+    for (i = 0; i < DESC_LIMIT; i++) {
+        if (ev3_sensor[ i ].type_inx != SENSOR_TYPE__NONE_) {
+            printf( "  type = %s\n", ev3_sensor_type( ev3_sensor[ i ].type_inx));
+            printf( "  port = %s\n", ev3_sensor_port_name( i, s));
+            if (get_sensor_mode( i, s, sizeof(s))) {
+                printf("  mode = %s\n", s);
+            }
+            if (get_sensor_num_values( i, &n)) {
+                for (j = 0; j < n; j++ ) {
+                    if ( get_sensor_value(j, i, &val )) {
+                        printf( "  value%d = %d\n", j, val);
+                    }
+                }
+            }
+        }
+    }
+    
+    if (ev3_search_sensor(LEGO_EV3_COLOR, &sn_color, 0)) {
+        set_sensor_mode( sn_color, "COL-COLOR" );
+    } else {
+        printf("COLOR sensor is NOT found\n" );
+        uninit_brick();
+        exit(1);
+    }
+}
+
+void uninit_brick(void) {
+    ev3_uninit();
 }
 
 int open_server_connection(char* server_name, int portno)
@@ -53,28 +104,40 @@ int main(int argc, char *argv[])
        exit(0);
     }
     
+    init_brick();
+    
     sockfd = open_server_connection(argv[1], atoi(argv[2]));
     
-    printf("Please enter the message: ");
+    printf("Sensing...");
+    while(1) {
+        if (!get_sensor_value( 0, sn_color, &val ) || ( val < 0 ) || ( val >= COLOR_COUNT )) {
+            val = 0;
+        }
+        printf( "%s", color[val]);
+        Sleep(100);
+    }
+    
+    
+    //bzero(buffer,256);
+    //fgets(buffer,255,stdin);
+    
+    //n = write(sockfd,buffer,strlen(buffer));
+    
+    //if (n < 0) {
+    //    error("ERROR writing to socket");
+    //}
+    
+    //bzero(buffer,256);
+    
+    //n = read(sockfd,buffer,255);
+    
+    //if (n < 0) {
+    //    error("ERROR reading from socket");
+    //}
+    
+    //printf("%s\n",buffer);
 
-    bzero(buffer,256);
-    fgets(buffer,255,stdin);
-    
-    n = write(sockfd,buffer,strlen(buffer));
-    
-    if (n < 0) {
-        error("ERROR writing to socket");
-    }
-    
-    bzero(buffer,256);
-    
-    n = read(sockfd,buffer,255);
-    
-    if (n < 0) {
-        error("ERROR reading from socket");
-    }
-    
-    printf("%s\n",buffer);
+    uninit_brick();
     
     return 0;
 }
