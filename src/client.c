@@ -6,6 +6,9 @@
 #include <netinet/in.h>
 #include <netdb.h> 
 #include <unistd.h>
+#include "ev3.h"
+#include "ev3_port.h"
+#include "ev3_sensor.h"
 
 #define Sleep( msec ) usleep(( msec ) * 1000 )
 #define COLOR_COUNT  (( int )( sizeof( color ) / sizeof( color[ 0 ])))
@@ -18,7 +21,13 @@ void error(char *msg)
     exit(0);
 }
 
-void init_brick(void) {
+void uninit_brick(void)
+{
+    ev3_uninit();
+}
+
+void init_brick(void)
+{
     char s[ 256 ];
     int val;
     uint32_t n, i, j;
@@ -26,7 +35,7 @@ void init_brick(void) {
     
     printf("Waiting for the EV3 brick...\n");
     if (ev3_init() < 1) {
-        return(1);
+        exit(1);
     }
     
     printf("Got EV3 brick...\n");
@@ -60,16 +69,14 @@ void init_brick(void) {
     }
 }
 
-void uninit_brick(void) {
-    ev3_uninit();
-}
-
 int open_server_connection(char* server_name, int portno)
 {
     struct sockaddr_in serv_addr;
     struct hostent *server;   
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    
+
+    printf("Opening connection to %s port %d\n", server_name, portno);
+
     if (sockfd < 0) {
         error("ERROR opening socket");
     }
@@ -90,15 +97,19 @@ int open_server_connection(char* server_name, int portno)
     if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0) {
         error("ERROR connecting");
     }
+
+    fflush(stdout);
     
     return sockfd;
 }
 
 int main(int argc, char *argv[])
 {
-    int sockfd, n;
-    char buffer[256];
-    
+    int sockfd, n, val;
+    char out_buffer[256];
+    char in_buffer[256];
+    uint8_t sn_color;
+
     if (argc < 3) {
        fprintf(stderr,"usage %s hostname port\n", argv[0]);
        exit(0);
@@ -107,35 +118,33 @@ int main(int argc, char *argv[])
     init_brick();
     
     sockfd = open_server_connection(argv[1], atoi(argv[2]));
-    
+    bzero(out_buffer, 256);
+    bzero(in_buffer, 256);
+
     printf("Sensing...");
     while(1) {
         if (!get_sensor_value( 0, sn_color, &val ) || ( val < 0 ) || ( val >= COLOR_COUNT )) {
             val = 0;
         }
-        printf( "%s", color[val]);
+
+        out_buffer[0] = val;
+        out_buffer[1] = 0;
+	n = write(sockfd, out_buffer, 2);
+	if (n < 0) {
+	    error("ERROR writing to socket");
+        }
+
+        printf("Sent %d\n",val);
+	fflush(stdout);
+
+        n = read(sockfd, in_buffer, 2);
+	if (n < 0) {
+	    error("ERROR reading from socket");
+	}
+        printf("Received %d\n", in_buffer[0]);
+
         Sleep(100);
     }
-    
-    
-    //bzero(buffer,256);
-    //fgets(buffer,255,stdin);
-    
-    //n = write(sockfd,buffer,strlen(buffer));
-    
-    //if (n < 0) {
-    //    error("ERROR writing to socket");
-    //}
-    
-    //bzero(buffer,256);
-    
-    //n = read(sockfd,buffer,255);
-    
-    //if (n < 0) {
-    //    error("ERROR reading from socket");
-    //}
-    
-    //printf("%s\n",buffer);
 
     uninit_brick();
     
