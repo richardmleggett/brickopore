@@ -1,8 +1,11 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h> 
+#include <unistd.h>
 
 void error(char *msg)
 {
@@ -10,16 +13,17 @@ void error(char *msg)
     exit(0);
 }
 
-int open_server_connection(char* server, int portno)
+int open_server_connection(char* server_name, int portno)
 {
     struct sockaddr_in serv_addr;
+    struct hostent *server;   
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     
     if (sockfd < 0) {
         error("ERROR opening socket");
     }
     
-    server = gethostbyname(server);
+    server = gethostbyname(server_name);
     
     if (server == NULL) {
         fprintf(stderr,"ERROR, no such host\n");
@@ -42,7 +46,6 @@ int open_server_connection(char* server, int portno)
 int main(int argc, char *argv[])
 {
     int sockfd, n;
-    struct hostent *server;
     char buffer[256];
     
     if (argc < 3) {
