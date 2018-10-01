@@ -14,6 +14,7 @@
 #define COLOR_COUNT  (( int )( sizeof( color ) / sizeof( color[ 0 ])))
 
 const char const *color[] = { "?", "BLACK", "BLUE", "GREEN", "YELLOW", "RED", "WHITE", "BROWN" };
+uint8_t sn_color;
 
 void error(char *msg)
 {
@@ -31,7 +32,6 @@ void init_brick(void)
     char s[ 256 ];
     int val;
     uint32_t n, i, j;
-    uint8_t sn_touch, sn_color, sn_ir;
     
     printf("Waiting for the EV3 brick...\n");
     if (ev3_init() < 1) {
@@ -62,6 +62,7 @@ void init_brick(void)
     
     if (ev3_search_sensor(LEGO_EV3_COLOR, &sn_color, 0)) {
         set_sensor_mode( sn_color, "COL-COLOR" );
+        printf("sn_color = %d\n", sn_color);
     } else {
         printf("COLOR sensor is NOT found\n" );
         uninit_brick();
@@ -108,7 +109,6 @@ int main(int argc, char *argv[])
     int sockfd, n, val;
     char out_buffer[256];
     char in_buffer[256];
-    uint8_t sn_color;
     int got_command = 0;
 
     if (argc < 3) {
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
     bzero(in_buffer, 256);
     
     // Wait for command to sequence
-    while (got_command = 0) {
+    while (got_command == 0) {
         n = read(sockfd, in_buffer, 4);
         if (n > 0) {
             if (in_buffer[0] == '!') {
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
                 if (n < 3) {
                     printf("But not long enough\n");
                 } else {
-                    print("Command is %c%c", in_buffer[1], in_buffer[2]);
+                    printf("Command is %c%c", in_buffer[1], in_buffer[2]);
                     if ((in_buffer[1] = 'S') && (in_buffer[2] = 'Q')) {
                         got_command = 1;
                     }
