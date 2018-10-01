@@ -109,6 +109,7 @@ int main(int argc, char *argv[])
     char out_buffer[256];
     char in_buffer[256];
     uint8_t sn_color;
+    int got_command = 0;
 
     if (argc < 3) {
        fprintf(stderr,"usage %s hostname port\n", argv[0]);
@@ -120,6 +121,24 @@ int main(int argc, char *argv[])
     sockfd = open_server_connection(argv[1], atoi(argv[2]));
     bzero(out_buffer, 256);
     bzero(in_buffer, 256);
+    
+    // Wait for command to sequence
+    while (got_command = 0) {
+        n = read(sockfd, in_buffer, 4);
+        if (n > 0) {
+            if (in_buffer[0] == '!') {
+                printf("Got command...\n");
+                if (n < 3) {
+                    printf("But not long enough\n");
+                } else {
+                    print("Command is %c%c", in_buffer[1], in_buffer[2]);
+                    if ((in_buffer[1] = 'S') && (in_buffer[2] = 'Q')) {
+                        got_command = 1;
+                    }
+                }
+            }
+        }
+    }
 
     printf("Sensing...");
     while(1) {
