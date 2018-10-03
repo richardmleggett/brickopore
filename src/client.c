@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <netdb.h> 
+#include <netdb.h>
 #include <unistd.h>
 #include "ev3.h"
 #include "ev3_port.h"
@@ -44,9 +44,9 @@ void init_brick(void)
     }
     
     printf("Got EV3 brick...\n");
-
+    
     ev3_sensor_init();
-
+    
     printf("Found sensors:\n" );
     for (i = 0; i < DESC_LIMIT; i++) {
         if (ev3_sensor[ i ].type_inx != SENSOR_TYPE__NONE_) {
@@ -73,10 +73,10 @@ void init_brick(void)
         uninit_brick();
         exit(1);
     }
-
+    
     printf( "Waiting for tacho motor...\n" );
     while ( ev3_tacho_init() < 1 ) Sleep( 1000 );
-
+    
     printf( "Found tacho motors:\n" );
     for ( i = 0; i < DESC_LIMIT; i++ ) {
         if ( ev3_tacho[ i ].type_inx != TACHO_TYPE__NONE_ ) {
@@ -97,11 +97,11 @@ void init_brick(void)
 int open_server_connection(char* server_name, int portno)
 {
     struct sockaddr_in serv_addr;
-    struct hostent *server;   
+    struct hostent *server;
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-
+    
     printf("Opening connection to %s port %d\n", server_name, portno);
-
+    
     if (sockfd < 0) {
         error("ERROR opening socket");
     }
@@ -122,7 +122,7 @@ int open_server_connection(char* server_name, int portno)
     if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0) {
         error("ERROR connecting");
     }
-
+    
     fflush(stdout);
     
     return sockfd;
@@ -135,10 +135,11 @@ int main(int argc, char *argv[])
     char in_buffer[256];
     int got_command = 0;
     int step_size = 1150;
-
+    int state = 1;
+    
     if (argc < 3) {
-       fprintf(stderr,"usage %s hostname port\n", argv[0]);
-       exit(0);
+        fprintf(stderr,"usage %s hostname port\n", argv[0]);
+        exit(0);
     }
     
     init_brick();
@@ -164,7 +165,7 @@ int main(int argc, char *argv[])
             }
         }
     }
-
+    
     printf("Starting motor");
     set_tacho_stop_action_inx( sn_tacho, TACHO_BRAKE );
     set_tacho_speed_sp( sn_tacho, max_speed / 2 );
@@ -175,30 +176,44 @@ int main(int argc, char *argv[])
     set_tacho_command_inx( sn_tacho, TACHO_RUN_TO_REL_POS );
     
     printf("Sensing...");
-    while(1) {
+    state = 1;
+    while(state != 0) {
         if (!get_sensor_value( 0, sn_color, &val ) || ( val < 0 ) || ( val >= COLOR_COUNT )) {
             val = 0;
         }
-
-        out_buffer[0] = val;
-        out_buffer[1] = 0;
-	n = write(sockfd, out_buffer, 2);
-	if (n < 0) {
-	    error("ERROR writing to socket");
+        
+        out_buffer[0] = '!';
+        out_buffer[1] = 'D';
+        out_buffer[2] = val;
+        out_buffer[3] = 0;
+        n = write(sockfd, out_buffer, 4);
+        if (n < 0) {
+            error("ERROR writing to socket");
         }
-
+        
         printf("Sent %d\n",val);
-	fflush(stdout);
-
-        n = read(sockfd, in_buffer, 2);
-	if (n < 0) {
-	    error("ERROR reading from socket");
-	}
+        fflush(stdout);
+        
+        n = read(sockfd, in_buffer, 4);
+        if (n < 0) {
+            error("ERROR reading from socket");
+        }
         printf("Received %d\n", in_buffer[0]);
-
+        
         Sleep(100);
+        
+        get_tacho_state_flags( sn_tacho, &state );
     }
-
+    
+    out_buffer[0] = '!';
+    out_buffer[1] = 'S';
+    out_buffer[2] = 'T';
+    out_buffer[3] = 'P';
+    n = write(sockfd, out_buffer, 4);
+    if (n < 0) {
+        error("ERROR writing to socket");
+    }
+    
     uninit_brick();
     
     return 0;
