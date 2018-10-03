@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
     char in_buffer[256];
     int got_command = 0;
     int step_size = 1150;
-    int state = 1;
+    FLAGS_T state = 1;
     
     if (argc < 3) {
         fprintf(stderr,"usage %s hostname port\n", argv[0]);
