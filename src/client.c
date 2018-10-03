@@ -17,6 +17,7 @@
 
 const char const *color[] = { "?", "BLACK", "BLUE", "GREEN", "YELLOW", "RED", "WHITE", "BROWN" };
 uint8_t sn_color;
+uint8_t sn_tacho;
 int max_speed;
 
 
@@ -84,9 +85,9 @@ void init_brick(void)
         }
     }
     
-    if (ev3_search_tacho( LEGO_EV3_L_MOTOR, &sn, 0 )) {
+    if (ev3_search_tacho( LEGO_EV3_L_MOTOR, &sn_tacho, 0 )) {
         printf( "LEGO_EV3_L_MOTOR is found...\n" );
-        get_tacho_max_speed( sn, &max_speed );
+        get_tacho_max_speed( sn_tacho, &max_speed );
         printf("  max_speed = %d\n", max_speed );
     } else {
         printf( "LEGO_EV3_L_MOTOR is NOT found\n" );
@@ -165,13 +166,13 @@ int main(int argc, char *argv[])
     }
 
     printf("Starting motor");
-    set_tacho_stop_action_inx( sn, TACHO_BRAKE );
-    set_tacho_speed_sp( sn, max_speed / 2 );
-    set_tacho_ramp_up_sp( sn, 0 );
-    set_tacho_ramp_down_sp( sn, 0 );
-    set_tacho_position_sp( sn, step_size );
+    set_tacho_stop_action_inx( sn_tacho, TACHO_BRAKE );
+    set_tacho_speed_sp( sn_tacho, max_speed / 2 );
+    set_tacho_ramp_up_sp( sn_tacho, 0 );
+    set_tacho_ramp_down_sp( sn_tacho, 0 );
+    set_tacho_position_sp( sn_tacho, step_size );
     printf("Running to %d\n", step_size);
-    set_tacho_command_inx( sn, TACHO_RUN_TO_REL_POS );
+    set_tacho_command_inx( sn_tacho, TACHO_RUN_TO_REL_POS );
     
     printf("Sensing...");
     while(1) {
