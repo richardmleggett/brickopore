@@ -15,6 +15,8 @@
 
 const char const *color[] = { "?", "BLACK", "BLUE", "GREEN", "YELLOW", "RED", "WHITE", "BROWN" };
 uint8_t sn_color;
+int max_speed;
+
 
 void error(char *msg)
 {
@@ -68,6 +70,25 @@ void init_brick(void)
         uninit_brick();
         exit(1);
     }
+
+    printf( "Waiting for tacho motor...\n" );
+    while ( ev3_tacho_init() < 1 ) Sleep( 1000 );
+
+    printf( "Found tacho motors:\n" );
+    for ( i = 0; i < DESC_LIMIT; i++ ) {
+        if ( ev3_tacho[ i ].type_inx != TACHO_TYPE__NONE_ ) {
+            printf( "  type = %s\n", ev3_tacho_type( ev3_tacho[ i ].type_inx ));
+            printf( "  port = %s\n", ev3_tacho_port_name( i, s ));
+        }
+    }
+    
+    if (ev3_search_tacho( LEGO_EV3_L_MOTOR, &sn, 0 )) {
+        printf( "LEGO_EV3_L_MOTOR is found...\n" );
+        get_tacho_max_speed( sn, &max_speed );
+        printf("  max_speed = %d\n", max_speed );
+    } else {
+        printf( "LEGO_EV3_L_MOTOR is NOT found\n" );
+    }
 }
 
 int open_server_connection(char* server_name, int portno)
@@ -110,6 +131,7 @@ int main(int argc, char *argv[])
     char out_buffer[256];
     char in_buffer[256];
     int got_command = 0;
+    int step_size = 1150;
 
     if (argc < 3) {
        fprintf(stderr,"usage %s hostname port\n", argv[0]);
@@ -140,6 +162,15 @@ int main(int argc, char *argv[])
         }
     }
 
+    printf("Starting motor");
+    set_tacho_stop_action_inx( sn, TACHO_BRAKE );
+    set_tacho_speed_sp( sn, max_speed / 2 );
+    set_tacho_ramp_up_sp( sn, 0 );
+    set_tacho_ramp_down_sp( sn, 0 );
+    set_tacho_position_sp( sn, step_size );
+    printf("Running to %d\n", step_size);
+    set_tacho_command_inx( sn, TACHO_RUN_TO_REL_POS );
+    
     printf("Sensing...");
     while(1) {
         if (!get_sensor_value( 0, sn_color, &val ) || ( val < 0 ) || ( val >= COLOR_COUNT )) {
