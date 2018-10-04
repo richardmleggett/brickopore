@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
                 if (n < 3) {
                     printf("But not long enough\n");
                 } else {
-                    printf("Command is %c%c", in_buffer[1], in_buffer[2]);
+                    printf("Command is %c%c\n", in_buffer[1], in_buffer[2]);
                     if ((in_buffer[1] = 'S') && (in_buffer[2] = 'Q')) {
                         got_command = 1;
                     }
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
         }
     }
     
-    printf("Starting motor");
+    printf("Starting motor\n");
     set_tacho_stop_action_inx( sn_tacho, TACHO_BRAKE );
     set_tacho_speed_sp( sn_tacho, max_speed / 4 );
     set_tacho_ramp_up_sp( sn_tacho, 0 );
@@ -175,7 +175,7 @@ int main(int argc, char *argv[])
     printf("Running to %d\n", step_size);
     set_tacho_command_inx( sn_tacho, TACHO_RUN_TO_REL_POS );
     
-    printf("Sensing...");
+    printf("Sensing...\n");
     state = 1;
     while(state != 0) {
         if (!get_sensor_value( 0, sn_color, &val ) || ( val < 0 ) || ( val >= COLOR_COUNT )) {
