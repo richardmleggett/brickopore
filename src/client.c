@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
     
     printf("Starting motor");
     set_tacho_stop_action_inx( sn_tacho, TACHO_BRAKE );
-    set_tacho_speed_sp( sn_tacho, max_speed / 2 );
+    set_tacho_speed_sp( sn_tacho, max_speed / 4 );
     set_tacho_ramp_up_sp( sn_tacho, 0 );
     set_tacho_ramp_down_sp( sn_tacho, 0 );
     set_tacho_position_sp( sn_tacho, step_size );
@@ -191,28 +191,36 @@ int main(int argc, char *argv[])
             error("ERROR writing to socket");
         }
         
-        printf("Sent %d\n",val);
-        fflush(stdout);
+        //printf("Sent %d\n",val);
+        //fflush(stdout);
         
-        n = read(sockfd, in_buffer, 4);
-        if (n < 0) {
-            error("ERROR reading from socket");
-        }
-        printf("Received %d\n", in_buffer[0]);
+        //n = read(sockfd, in_buffer, 4);
+        //if (n < 0) {
+        //    error("ERROR reading from socket");
+        //}
+        //printf("Received %d\n", in_buffer[0]);
         
-        Sleep(100);
+        Sleep(5);
         
         get_tacho_state_flags( sn_tacho, &state );
     }
     
+    printf("Sending stop\n");
     out_buffer[0] = '!';
     out_buffer[1] = 'S';
     out_buffer[2] = 'T';
-    out_buffer[3] = 'P';
+    out_buffer[3] = 0;
     n = write(sockfd, out_buffer, 4);
     if (n < 0) {
         error("ERROR writing to socket");
     }
+    //fflush(stdout);
+    Sleep(100);
+
+    printf("Reversing\n");
+
+    set_tacho_position_sp(sn_tacho, 0-step_size);
+    set_tacho_command_inx(sn_tacho, TACHO_RUN_TO_REL_POS);
     
     uninit_brick();
     
