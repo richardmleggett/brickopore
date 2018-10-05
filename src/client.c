@@ -207,9 +207,16 @@ void find_white(void)
             printf(" - Found\n");
             found_white = 1;
         } else {
+            FLAGS_T state = 1;
+            
             printf(" - %d\n", val);
             set_tacho_position_sp(sn_tacho, 10);
             set_tacho_command_inx(sn_tacho, TACHO_RUN_TO_REL_POS);
+
+            while(state != 0) {
+                get_tacho_state_flags( sn_tacho, &state );
+            }
+            
             count++;
         }
     } while ((found_white == 0) && (count < 36));
