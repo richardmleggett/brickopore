@@ -253,11 +253,11 @@ int main(int argc, char *argv[])
                     printf("But not long enough\n");
                 } else {
                     printf("Command is %c%c\n", in_buffer[1], in_buffer[2]);
-                    if ((in_buffer[1] = 'S') && (in_buffer[2] = 'Q')) {
+                    if ((in_buffer[1] == 'S') && (in_buffer[2] == 'Q')) {
                         capture_read(sockfd);
-                    } else if ((in_buffer[1] = 'F') && (in_buffer[2] = 'W')) {
+                    } else if ((in_buffer[1] == 'F') && (in_buffer[2] == 'W')) {
                         find_white();
-                    } else if ((in_buffer[1] = 'E') && (in_buffer[2] = 'X')) {
+                    } else if ((in_buffer[1] == 'E') && (in_buffer[2] == 'X')) {
                         printf("Got exit command\n");
                         running = 0;
                     }
