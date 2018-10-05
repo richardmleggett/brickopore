@@ -14,6 +14,7 @@
 
 #define Sleep( msec ) usleep(( msec ) * 1000 )
 #define COLOR_COUNT  (( int )( sizeof( color ) / sizeof( color[ 0 ])))
+#define COLOR_WHITE 6
 
 const char const *color[] = { "?", "BLACK", "BLUE", "GREEN", "YELLOW", "RED", "WHITE", "BROWN" };
 uint8_t sn_color;
@@ -134,6 +135,7 @@ void capture_read(int sockfd)
     char in_buffer[256];
     FLAGS_T state = 1;
     int step_size = 1150;
+    int n;
     
     bzero(out_buffer, 256);
     bzero(in_buffer, 256);
