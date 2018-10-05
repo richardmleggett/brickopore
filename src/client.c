@@ -138,6 +138,9 @@ void capture_read(int sockfd)
     printf("Starting motor - running to %d\n", step_size);
     set_tacho_position_sp( sn_tacho, step_size );
     set_tacho_command_inx( sn_tacho, TACHO_RUN_TO_REL_POS );
+
+    bzero(out_buffer, 256);
+    bzero(in_buffer, 256);
     
     printf("Sensing\n");
     state = 1;
@@ -198,7 +201,7 @@ void find_white(void)
             val = 0;
         }
 
-        if (val == COLOUR_WHITE) {
+        if (val == COLOR_WHITE) {
             found_white = 1;
         } else {
             set_tacho_position_sp(sn_tacho, 10);
@@ -234,8 +237,6 @@ int main(int argc, char *argv[])
     set_tacho_ramp_down_sp( sn_tacho, 0 );
     
     sockfd = open_server_connection(argv[1], atoi(argv[2]));
-    bzero(out_buffer, 256);
-    bzero(in_buffer, 256);
     
     // Wait for command to sequence
     while (running == 1) {
