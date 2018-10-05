@@ -210,13 +210,20 @@ void find_white(void)
             set_tacho_command_inx(sn_tacho, TACHO_RUN_TO_REL_POS);
             count++;
         }
-    } while ((!found_white) && (count < 10));
+    } while ((!found_white) && (count < 36));
     
     if (found_white == 1) {
         printf("Found sequencing adapter");
     } else {
         printf("Didn not find sequencing adapter");
     }
+}
+
+void nudge(int n)
+{
+    printf("Nudging by %d\n", n);
+    set_tacho_position_sp(sn_tacho, n);
+    set_tacho_command_inx(sn_tacho, TACHO_RUN_TO_REL_POS);
 }
 
 int main(int argc, char *argv[])
@@ -257,6 +264,10 @@ int main(int argc, char *argv[])
                         capture_read(sockfd);
                     } else if ((in_buffer[1] == 'F') && (in_buffer[2] == 'W')) {
                         find_white();
+                    } else if ((in_buffer[1] == 'N') && (in_buffer[2] == 'B')) {
+                        nudge(0 - (in_buffer[3]*10));
+                    } else if ((in_buffer[1] == 'N') && (in_buffer[2] == 'F')) {
+                        nudge(in_buffer[3]*10);
                     } else if ((in_buffer[1] == 'E') && (in_buffer[2] == 'X')) {
                         printf("Got exit command\n");
                         running = 0;
