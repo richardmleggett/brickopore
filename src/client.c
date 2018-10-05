@@ -204,6 +204,7 @@ void find_white(void)
         }
 
         if (val == COLOR_WHITE) {
+            printf(" - Found\n");
             found_white = 1;
         } else {
             printf(" - %d\n", val);
@@ -211,7 +212,7 @@ void find_white(void)
             set_tacho_command_inx(sn_tacho, TACHO_RUN_TO_REL_POS);
             count++;
         }
-    } while ((!found_white) && (count < 36));
+    } while ((found_white == 0) && (count < 36));
     
     if (found_white == 1) {
         printf("Found sequencing adapter\n");
