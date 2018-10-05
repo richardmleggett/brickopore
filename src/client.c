@@ -135,12 +135,12 @@ void capture_read(int sockfd)
     FLAGS_T state = 1;
     int step_size = 1150;
     
+    bzero(out_buffer, 256);
+    bzero(in_buffer, 256);
+    
     printf("Starting motor - running to %d\n", step_size);
     set_tacho_position_sp( sn_tacho, step_size );
     set_tacho_command_inx( sn_tacho, TACHO_RUN_TO_REL_POS );
-
-    bzero(out_buffer, 256);
-    bzero(in_buffer, 256);
     
     printf("Sensing\n");
     state = 1;
@@ -222,6 +222,8 @@ int main(int argc, char *argv[])
     int sockfd, n;
     int got_command = 0;
     int running = 1;
+    char in_buffer[256];
+
     
     if (argc < 3) {
         fprintf(stderr,"usage %s hostname port\n", argv[0]);
@@ -237,6 +239,7 @@ int main(int argc, char *argv[])
     set_tacho_ramp_down_sp( sn_tacho, 0 );
     
     sockfd = open_server_connection(argv[1], atoi(argv[2]));
+    bzero(in_buffer, 256);
     
     // Wait for command to sequence
     while (running == 1) {
