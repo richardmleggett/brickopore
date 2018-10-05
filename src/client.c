@@ -20,7 +20,6 @@ uint8_t sn_color;
 uint8_t sn_tacho;
 int max_speed;
 
-
 void error(char *msg)
 {
     perror(msg);
@@ -128,54 +127,19 @@ int open_server_connection(char* server_name, int portno)
     return sockfd;
 }
 
-int main(int argc, char *argv[])
+void capture_read(int sockfd)
 {
-    int sockfd, n, val;
+    int val;
     char out_buffer[256];
     char in_buffer[256];
-    int got_command = 0;
-    int step_size = 1150;
     FLAGS_T state = 1;
+    int step_size = 1150;
     
-    if (argc < 3) {
-        fprintf(stderr,"usage %s hostname port\n", argv[0]);
-        exit(0);
-    }
-    
-    init_brick();
-    
-    sockfd = open_server_connection(argv[1], atoi(argv[2]));
-    bzero(out_buffer, 256);
-    bzero(in_buffer, 256);
-    
-    // Wait for command to sequence
-    while (got_command == 0) {
-        n = read(sockfd, in_buffer, 4);
-        if (n > 0) {
-            if (in_buffer[0] == '!') {
-                printf("Got command...\n");
-                if (n < 3) {
-                    printf("But not long enough\n");
-                } else {
-                    printf("Command is %c%c\n", in_buffer[1], in_buffer[2]);
-                    if ((in_buffer[1] = 'S') && (in_buffer[2] = 'Q')) {
-                        got_command = 1;
-                    }
-                }
-            }
-        }
-    }
-    
-    printf("Starting motor\n");
-    set_tacho_stop_action_inx( sn_tacho, TACHO_BRAKE );
-    set_tacho_speed_sp( sn_tacho, max_speed / 4 );
-    set_tacho_ramp_up_sp( sn_tacho, 0 );
-    set_tacho_ramp_down_sp( sn_tacho, 0 );
+    printf("Starting motor - running to %d\n", step_size);
     set_tacho_position_sp( sn_tacho, step_size );
-    printf("Running to %d\n", step_size);
     set_tacho_command_inx( sn_tacho, TACHO_RUN_TO_REL_POS );
     
-    printf("Sensing...\n");
+    printf("Sensing\n");
     state = 1;
     while(state != 0) {
         if (!get_sensor_value( 0, sn_color, &val ) || ( val < 0 ) || ( val >= COLOR_COUNT )) {
@@ -216,13 +180,89 @@ int main(int argc, char *argv[])
     }
     //fflush(stdout);
     Sleep(100);
-
+    
     printf("Reversing\n");
-
+    
     set_tacho_position_sp(sn_tacho, 0-step_size);
     set_tacho_command_inx(sn_tacho, TACHO_RUN_TO_REL_POS);
+}
+
+void find_white(void)
+{
+    int found_white = 0;
+    int val;
+    int count = 0;
+    
+    do {
+        if (!get_sensor_value( 0, sn_color, &val ) || ( val < 0 ) || ( val >= COLOR_COUNT )) {
+            val = 0;
+        }
+
+        if (val == COLOUR_WHITE) {
+            found_white = 1;
+        } else {
+            set_tacho_position_sp(sn_tacho, 10);
+            set_tacho_command_inx(sn_tacho, TACHO_RUN_TO_REL_POS);
+            count++;
+        }
+    } while ((!found_white) && (count < 10));
+    
+    if (found_white == 1) {
+        printf("Found sequencing adapter");
+    } else {
+        printf("Didn not find sequencing adapter");
+    }
+}
+
+int main(int argc, char *argv[])
+{
+    int sockfd, n;
+    int got_command = 0;
+    int running = 1;
+    
+    if (argc < 3) {
+        fprintf(stderr,"usage %s hostname port\n", argv[0]);
+        exit(0);
+    }
+    
+    init_brick();
+
+    printf("Setting up motor\n");
+    set_tacho_stop_action_inx( sn_tacho, TACHO_BRAKE );
+    set_tacho_speed_sp( sn_tacho, max_speed / 4 );
+    set_tacho_ramp_up_sp( sn_tacho, 0 );
+    set_tacho_ramp_down_sp( sn_tacho, 0 );
+    
+    sockfd = open_server_connection(argv[1], atoi(argv[2]));
+    bzero(out_buffer, 256);
+    bzero(in_buffer, 256);
+    
+    // Wait for command to sequence
+    while (running == 1) {
+        n = read(sockfd, in_buffer, 4);
+        if (n > 0) {
+            if (in_buffer[0] == '!') {
+                printf("Got command...\n");
+                if (n < 3) {
+                    printf("But not long enough\n");
+                } else {
+                    printf("Command is %c%c\n", in_buffer[1], in_buffer[2]);
+                    if ((in_buffer[1] = 'S') && (in_buffer[2] = 'Q')) {
+                        capture_read(sockfd);
+                    } else if ((in_buffer[1] = 'F') && (in_buffer[2] = 'W')) {
+                        find_white();
+                    } else if ((in_buffer[1] = 'E') && (in_buffer[2] = 'X')) {
+                        printf("Got exit command\n");
+                        running = 0;
+                    }
+                }
+            }
+        }
+    }
+    
     
     uninit_brick();
+    close(sockfd);
     
     return 0;
 }
